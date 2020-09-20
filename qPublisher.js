@@ -1,5 +1,5 @@
 require("dotenv").config();
-const amqp = require("amqplib").connect("amqp://ekar:11223344@localhost");
+const amqp = require("amqplib");
 const express = require("express");
 const axios = require("axios");
 const FormData = require("form-data");
@@ -24,8 +24,6 @@ app.listen(PORT, () => {
 
 // functions
 let createRefreshsession = async () => {
-  let q = "getUnits";
-
   let formData = new FormData();
   formData.append(
     "params",
@@ -44,7 +42,7 @@ let createRefreshsession = async () => {
   await setUserFlags(sid);
 
   setInterval(() => {
-    getEvent(q, sid);
+    getEvent(sid);
   }, 1000);
 };
 
@@ -149,7 +147,7 @@ let resetUnitFlags = async (sid) => {
   console.log("Reset Unit Flags");
 };
 
-let getEvent = async (q, sid) => {
+let getEvent = async (sid) => {
   try {
     let evtsData = new FormData();
 
@@ -209,28 +207,27 @@ let getEvent = async (q, sid) => {
       formattedData.map((unitDetails) => {
         sendToQ.push(unitDetails);
       });
-      amqp
-        .then((conn) => {
-          return conn.createChannel();
-        })
-        .then(async (ch) => {
-          try {
-            return ch.assertQueue(q).then((ok) => {
-              if (sendToQ.length > 0) {
-                return ch.sendToQueue(q, Buffer.from(JSON.stringify(sendToQ)));
-              }
-            });
-          } catch (err) {
-            console.error(err);
-          }
-        })
-        .catch(console.warn);
       if (sendToQ.length > 0) {
-        console.log({
-          message: sendToQ,
-          status: "Event Sent to Queue! " + Date(),
-        });
+        await sendMessage(sendToQ);
       }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+let q = "getUnits";
+const sendMessage = async (msg) => {
+  try {
+    const conn = await amqp.connect("amqp://ekar:11223344@localhost");
+    const channel = await conn.createChannel();
+    const result = channel.assertQueue(q);
+    if (msg.length > 0) {
+      channel.sendToQueue(q, Buffer.from(JSON.stringify(msg)));
+      console.log({
+        message: msg,
+        status: "Event Sent to Queue! " + Date(),
+      });
     }
   } catch (err) {
     console.error(err);

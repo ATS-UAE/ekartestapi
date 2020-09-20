@@ -16,7 +16,8 @@ const searchItemUrl =
 const commandToken = process.env.COMMAND_TOKEN;
 
 app.listen(PORT, async () => {
-  console.log(`SERVET STARTED AT PORT ${PORT}`);
+  console.log(`COMMANDS CONSUMER STARTED AT PORT ${PORT}`);
+  console.log("WAITING FOR COMMAND MESSAGES...");
   await consumeMsg();
 });
 
@@ -27,7 +28,6 @@ const consumeMsg = async () => {
     const connection = await amqp.connect("amqp://ekar:11223344@localhost");
     const channel = await connection.createChannel();
     const result = await channel.assertQueue(q);
-    console.log("Consumer script ready, waiting for commands...");
     channel.consume(q, async (msg) => {
       if (msg !== null) {
         let parsedMessage = JSON.parse(msg.content.toString());

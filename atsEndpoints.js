@@ -3,6 +3,9 @@ const express = require("express");
 const app = express();
 const amqp = require("amqplib");
 const bodyParser = require("body-parser");
+const FormData = require("form-data");
+const axios = require("axios");
+
 app.use(bodyParser.json());
 
 const token = process.env.WIALON_TOKEN;
@@ -12,7 +15,7 @@ let liveTelematicsData = {};
 
 const host = "https://hst-api.wialon.com/wialon/ajax.html?svc=token/login";
 
-app.post("services/ekar/getUnits", isAuth, (req, res) => {
+app.get("/services/ekar/getUnits", isAuth, (req, res) => {
   res.json(liveTelematicsData);
 });
 
@@ -165,19 +168,19 @@ function isAuth(req, res, next) {
 const PORT = process.env.PORT || 8082;
 
 app.listen(PORT, async () => {
-  console.log(`SERVER STARTED AT PORT ${PORT}`);
+  console.log(`ATS ENDPOINTS STARTED AT PORT ${PORT}`);
   await consumeData();
 });
 
 // functions
-const q = "commands";
+const qCommands = "commands";
 const sentQ = async (device_id, command_key) => {
   try {
     const connection = await amqp.connect("amqp://ekar:11223344@localhost");
     const channel = await connection.createChannel();
-    const result = await channel.assertQueue(q);
+    const result = await channel.assertQueue(qCommands);
     channel.sendToQueue(
-      q,
+      qCommands,
       Buffer.from(
         JSON.stringify({ device_id: device_id, command_key: command_key })
       )
@@ -187,15 +190,15 @@ const sentQ = async (device_id, command_key) => {
   }
 };
 
-const q = "getUnits";
+const qUnits = "getUnits";
 const consumeData = async () => {
   try {
-    console.log("TELEMATICS CONSUMER STARTED!");
+    console.log(`TELEMATICS CONSUMER STARTED AT PORT ${PORT}!`);
     console.log("WAITING FOR MESSAGES...");
     const conn = await amqp.connect("amqp://ekar:11223344@localhost");
     const channel = await conn.createChannel();
-    const result = channel.assertQueue(q);
-    channel.consume(q, (msg) => {
+    const result = channel.assertQueue(qUnits);
+    channel.consume(qUnits, (msg) => {
       if (msg !== null) {
         console.log("Message Consumed!");
         let data = {
