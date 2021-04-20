@@ -2,15 +2,17 @@
   "name": "ekar",
   "version": "1.0.0",
   "description": "ekar remote api",
-  "main": "server.js",
+  "main": "qPublisher.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "concurrently \"node atsEndpoints.js\" \"node commandsConsumer.js\" \"node qPublisher.js\""
   },
   "author": "ats",
   "license": "ISC",
   "dependencies": {
+    "amqplib": "^0.6.0",
     "axios": "^0.20.0",
     "body-parser": "^1.19.0",
+    "concurrently": "^5.3.0",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "form-data": "^3.0.0",
